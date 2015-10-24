@@ -42,6 +42,7 @@ public:
     bool dropTable(std::string tableName);
     Block* getFirstBlock(std::string tableName);
     Block* getNextBlock(Block* blockNow);
+    Block* getBlockByOffset(std::string tableName, int offset);
     // Functions for Index Manager
     IndexBlock* getIndexBlock(std::string tableName, std::string attr, int blockNo);
     IndexBlock* getIndexNewBlock(std::string tableName, std::string attr);

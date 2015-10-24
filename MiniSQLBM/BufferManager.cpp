@@ -176,7 +176,7 @@ Block* BufferManager::getFirstBlock(std::string tableName) {
             returnPtr = tmpBlock;
             fin.close();
         } else {
-            // Doesn't exist the first block file
+            // Doesn't exist
         }
     }
     return returnPtr;
@@ -207,7 +207,7 @@ Block* BufferManager::getNextBlock(Block *blockNow) {
             returnPtr = tmpBlock;
             fin.close();
         } else {
-            // Dones't exist the next block file
+            // Doesn't exist
             // Need to create the next block file
             std::ofstream fout;
             fout.open(nextBlockFileName, std::ios::out | std::ios::binary);
@@ -226,6 +226,55 @@ Block* BufferManager::getNextBlock(Block *blockNow) {
             }
         }
     }
+    return returnPtr;
+}
+
+Block* BufferManager::getBlockByOffset(std::string tableName, int offset) {
+    Block* returnPtr = NULL;
+    int blockNo = offset / EACH_BLOCK_RECORDS;
+    std::string fileName = tableName + "_" + formatNotoString(blockNo);
+    if (recordBlockMap.find(fileName) != recordBlockMap.end()) {
+        // If existed in the map
+        returnPtr = recordBlockMap[fileName];
+    } else  {
+        // To open the Block
+        std::ifstream fin;
+        fin.open(fileName, std::ios::in | std::ios::binary);
+        if (fin) {
+            Block* tmpBlock = getBlockFromRecordBlockPool();
+            int tmpRecordNum = 0;
+            fin.read((char*)tmpBlock->records, sizeof(tmpBlock->records));
+            for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
+                if (!tmpBlock->records[i].empty)
+                    tmpRecordNum++;
+            }
+            tmpBlock->recordNum = tmpRecordNum;
+            tmpBlock->tableName = tableName;
+            tmpBlock->blockNo = blockNo;
+            recordBlockMap[fileName] = tmpBlock;
+            returnPtr = tmpBlock;
+            fin.close();
+        } else {
+            // Error: Doesn't exist
+            /*// Need to create the next block file
+            std::ofstream fout;
+            fout.open(fileName, std::ios::out | std::ios::binary);
+            if (fout) {
+                Block* tmpBlock = getBlockFromRecordBlockPool();
+                for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
+                    tmpBlock->records[i].empty = true;
+                }
+                fout.write((char*)tmpBlock->records, sizeof(tmpBlock->records));
+                tmpBlock->recordNum = 0;
+                tmpBlock->blockNo = blockNo;
+                tmpBlock->tableName = tableName;
+                recordBlockMap[fileName] = tmpBlock;
+                returnPtr = tmpBlock;
+                fout.close();
+            }*/
+        }
+    }
+    
     return returnPtr;
 }
 
