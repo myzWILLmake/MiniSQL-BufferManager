@@ -21,29 +21,44 @@
 
 class BufferManager {
 private:
-    int currentRBPPos;  // Current recordBlockPool's position
-    int currentIBPPos;  // Current IndexBlockPool's position
-    Block* recordBlockPool[RECORD_BLOCK_NUM];
-    IndexBlock* indexBlockPool[INDEX_BLOCK_NUM];
+    /**
+     * Distribute a block from the pool when a new block file opened
+     */
+    int currentRBPPos;                              // Current recordBlockPool's position
+    int currentIBPPos;                              // Current IndexBlockPool's position
+    Block* recordBlockPool[RECORD_BLOCK_NUM];       // Record block pool
+    IndexBlock* indexBlockPool[INDEX_BLOCK_NUM];    // Index block pool
     
-    std::map<std::string, Block*> recordBlockMap;
-    std::map<std::string, IndexBlock*> indexBlockMap;
+    /**
+     * If the block is opened, it can be found in the map
+     * @key     file's name
+     * @value   block's pointer
+     */
+    std::map<std::string, Block*> recordBlockMap;       // Record block map
+    std::map<std::string, IndexBlock*> indexBlockMap;   // Index block map
     
-    std::string formatNotoString(int numNo);    // Files' suffix
+    /* Add the file's suffix */
+    std::string formatNotoString(int numNo);
+    
+    /* Get one block from the block pool */
     Block* getBlockFromRecordBlockPool();
     IndexBlock* getBlockFromIndexBlockPool();
+    
+    /* Close a block */
     void closeBlock(Block* block);
     void closeIndexBlock(IndexBlock* block);
 public:
     BufferManager();
     ~BufferManager();
-    // Functions for Record Manager
+    
+    /* Functions for Record Manager */
     bool createTable(std::string tableName);
     bool dropTable(std::string tableName);
     Block* getFirstBlock(std::string tableName);
     Block* getNextBlock(Block* blockNow);
     Block* getBlockByOffset(std::string tableName, int offset);
-    // Functions for Index Manager
+    
+    /* Functions for Index Manager */
     IndexBlock* getIndexBlock(std::string tableName, std::string attr, int blockNo);
     IndexBlock* getIndexNewBlock(std::string tableName, std::string attr);
     bool deleteIndexBlock(std::string tableName, std::string attr, int blockNo);

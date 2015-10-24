@@ -10,35 +10,7 @@
 
 #include "BufferManager.hpp"
 
-BufferManager::BufferManager() {
-    // Initial the position for the pool
-    currentIBPPos = 0;
-    currentRBPPos = 0;
-    // Initial recordBlockPool
-    for (int i=0; i<RECORD_BLOCK_NUM; i++) {
-        Block* nodeBlock = new Block();
-        recordBlockPool[i] = nodeBlock;
-    }
-    // Initial indexBlockPool and initial memory space for indexBlock
-    for (int i=0; i<INDEX_BLOCK_NUM; i++) {
-        IndexBlock* nodeBlock = new IndexBlock();
-        char* memptr = (char*) malloc(0x1000);
-        nodeBlock->address = memptr;
-        indexBlockPool[i] = nodeBlock;
-    }
-}
-
-BufferManager::~BufferManager() {
-    for (int i=0; i<RECORD_BLOCK_NUM; i++) {
-        closeBlock(recordBlockPool[i]);
-        delete recordBlockPool[i];
-    }
-    for (int i=0; i<INDEX_BLOCK_NUM; i++) {
-        closeIndexBlock(indexBlockPool[i]);
-        free(indexBlockPool[i]->address);
-        delete indexBlockPool[i];
-    }
-}
+/* -------- private functions -------- */
 
 std::string BufferManager::formatNotoString(int numNo) {
     char numChar0 = '0' + numNo / 10;
@@ -112,6 +84,44 @@ void BufferManager::closeIndexBlock(IndexBlock *block) {
     indexBlockMap.erase(it);
 }
 
+/* -------- public functions -------- */
+
+BufferManager::BufferManager() {
+    // Initial the position for the pool
+    currentIBPPos = 0;
+    currentRBPPos = 0;
+    // Initial recordBlockPool
+    for (int i=0; i<RECORD_BLOCK_NUM; i++) {
+        Block* nodeBlock = new Block();
+        recordBlockPool[i] = nodeBlock;
+    }
+    // Initial indexBlockPool and initial memory space for indexBlock
+    for (int i=0; i<INDEX_BLOCK_NUM; i++) {
+        IndexBlock* nodeBlock = new IndexBlock();
+        char* memptr = (char*) malloc(0x1000);
+        nodeBlock->address = memptr;
+        indexBlockPool[i] = nodeBlock;
+    }
+}
+
+BufferManager::~BufferManager() {
+    for (int i=0; i<RECORD_BLOCK_NUM; i++) {
+        closeBlock(recordBlockPool[i]);
+        delete recordBlockPool[i];
+    }
+    for (int i=0; i<INDEX_BLOCK_NUM; i++) {
+        closeIndexBlock(indexBlockPool[i]);
+        free(indexBlockPool[i]->address);
+        delete indexBlockPool[i];
+    }
+}
+
+/**
+ * Initial the first block file to create a table. A boolean value to show the
+ * result. True is success, false is failure.
+ * @param   tablaName   string of a file name
+ * @return              result for the operation
+ */
 bool BufferManager::createTable(std::string tableName) {
     bool returnBool = false;
     std::ofstream fout;
@@ -129,6 +139,12 @@ bool BufferManager::createTable(std::string tableName) {
     return returnBool;
 }
 
+/**
+ * Prepartion to drop a table. A boolean value to show the result. True is 
+ * success, false is failure.
+ * @param   tableName   string of a table name
+ * @return              result for the operation
+ */
 bool BufferManager::dropTable(std::string tableName) {
     // Erase all the data from the map and pool
     for (int i=0; i<MAX_BLOCK_FILE_NUM; i++) {
@@ -151,6 +167,12 @@ bool BufferManager::dropTable(std::string tableName) {
     return true;
 }
 
+/**
+ * To get the first block of a table. Return a block pointer pointing to a
+ * block which is prepared.
+ * @param   tableName   string of a table name
+ * @return              block pointer
+ */
 Block* BufferManager::getFirstBlock(std::string tableName) {
     Block* returnPtr = NULL;
     std::string fileName = tableName + "_" + formatNotoString(0);
@@ -182,6 +204,12 @@ Block* BufferManager::getFirstBlock(std::string tableName) {
     return returnPtr;
 }
 
+/**
+ * To get the next block (the No. is the current block's block No. plus 1).
+ * Return a block pointer pointing to a block which is prepared.
+ * @param   blockNoew   block pointer pointing to the curren block
+ * @return              block pointer
+ */
 Block* BufferManager::getNextBlock(Block *blockNow) {
     Block* returnPtr = NULL;
     std::string nextBlockFileName = blockNow->tableName + "_" + formatNotoString(blockNow->blockNo + 1);
@@ -229,6 +257,13 @@ Block* BufferManager::getNextBlock(Block *blockNow) {
     return returnPtr;
 }
 
+/**
+ * To get a block which includes a record specified by a offset. Return a
+ * block pointer pointing to a block which is prepared.
+ * @param   offset  a offset of a record used to find a block which 
+ *                  contains the record
+ * @return          block pointer
+ */
 Block* BufferManager::getBlockByOffset(std::string tableName, int offset) {
     Block* returnPtr = NULL;
     int blockNo = offset / EACH_BLOCK_RECORDS;
@@ -278,6 +313,14 @@ Block* BufferManager::getBlockByOffset(std::string tableName, int offset) {
     return returnPtr;
 }
 
+/**
+ * To get a specified index block. Return a index block pointer pointing
+ * to a index block which is prepared.
+ * @param   tableName   string of a table name
+ * @param   attr        string of an attribute
+ * @param   blockNo     the No. of the index block
+ * @return              index block pointer
+ */
 IndexBlock* BufferManager::getIndexBlock(std::string tableName, std::string attr, int blockNo) {
     IndexBlock* returnPtr = NULL;
     std::string fileName = tableName + "_" + attr + "_" + formatNotoString(blockNo);
@@ -318,6 +361,14 @@ IndexBlock* BufferManager::getIndexBlock(std::string tableName, std::string attr
     return returnPtr;
 }
 
+/**
+ * To create a new index block (acturlly, find a not used index block sequentially 
+ * and create it). Return a index block pointer pointing to a index block which
+ * is prepared.
+ * @param   tableName   string of a table name
+ * @param   attr        string of an attribute
+ * @return              index block pointer
+ */
 IndexBlock* BufferManager::getIndexNewBlock(std::string tableName, std::string attr) {
     IndexBlock* returnPtr = NULL;
     for (int i=0; i<MAX_BLOCK_FILE_NUM; i++) {
@@ -346,6 +397,14 @@ IndexBlock* BufferManager::getIndexNewBlock(std::string tableName, std::string a
     return returnPtr;
 }
 
+/**
+ * delete a specified index block. Return a boolean value, ture is success and
+ * false is failure.
+ * @param   tableName   string of a table name
+ * @param   attr        string of an attribute
+ * @param   blockNo     the No. of a inde block
+ * @return              result for the operation
+ */
 bool BufferManager::deleteIndexBlock(std::string tableName, std::string attr, int blockNo) {
     std::string fileName = tableName + "_" + attr + "_" + formatNotoString(blockNo);
     std::map<std::string, IndexBlock*>::iterator it = indexBlockMap.find(fileName);
