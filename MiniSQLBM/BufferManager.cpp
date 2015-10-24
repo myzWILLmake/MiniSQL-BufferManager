@@ -250,7 +250,20 @@ IndexBlock* BufferManager::getIndexBlock(std::string tableName, std::string attr
             returnPtr = tmpBlock;
             fin.close();
         } else {
-            // Error: The specified file doesn't exist
+            // Create the file
+            std::ofstream fout;
+            fout.open(fileName, std::ios::out | std::ios::binary);
+            fout.close();
+            // Get the indexblock
+            IndexBlock* tmpBlock = getBlockFromIndexBlockPool();
+            memset(tmpBlock->address, 0, 0x1000);
+            tmpBlock->tableName = tableName;
+            tmpBlock->attrName = attr;
+            tmpBlock->blockNo = blockNo;
+            tmpBlock->dirty = false;
+            tmpBlock->pin = false;
+            indexBlockMap[fileName] = tmpBlock;
+            returnPtr = tmpBlock;
         }
     }
     return returnPtr;
