@@ -34,6 +34,10 @@ Block* BufferManager::getBlockFromRecordBlockPool() {
 }
 
 void BufferManager::closeBlock(Block *block) {
+    // If the block is not used
+    if (!block->active) {
+        return;
+    }
     std::ofstream fout;
     std::string fileName = block->tableName + "_" + formatNotoString(block->blockNo);
     fout.open(fileName, std::ios::out | std::ios::binary);
@@ -65,6 +69,7 @@ IndexBlock* BufferManager::getBlockFromIndexBlockPool() {
 }
 
 void BufferManager::closeIndexBlock(IndexBlock *block) {
+    // If the block is not used
     std::ofstream fout;
     std::string fileName = block->tableName + "_" + block->attrName + "_" + formatNotoString(block->blockNo);
     fout.open(fileName, std::ios::out | std::ios::binary);
