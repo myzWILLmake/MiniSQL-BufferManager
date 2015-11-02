@@ -415,13 +415,7 @@ bool BufferManager::deleteIndexBlock(std::string tableName, std::string attr, in
     std::map<std::string, IndexBlock*>::iterator it = indexBlockMap.find(fileName);
     if (it != indexBlockMap.end()) {
         IndexBlock* tmpBlock = indexBlockMap[fileName];
-        memset(tmpBlock->address, 0, 0x1000);
-        tmpBlock->pin = false;
-        tmpBlock->dirty = false;
-        tmpBlock->tableName = "";
-        tmpBlock->attrName = "";
-        tmpBlock->blockNo = 0;
-        indexBlockMap.erase(it);
+        closeIndexBlock(tmpBlock);
     } else {
         // The file haven't been opened
     }
