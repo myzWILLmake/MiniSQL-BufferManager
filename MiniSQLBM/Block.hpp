@@ -14,6 +14,8 @@
 
 #define RECORD_LEN          512
 #define EACH_BLOCK_RECORDS  8
+#define SELECT_MODE 0
+#define INSERT_MODE 1
 
 class Record {
 public:

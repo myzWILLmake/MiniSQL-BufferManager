@@ -70,6 +70,9 @@ IndexBlock* BufferManager::getBlockFromIndexBlockPool() {
 
 void BufferManager::closeIndexBlock(IndexBlock *block) {
     // If the block is not used
+    if (!block->active) {
+        return;
+    }
     std::ofstream fout;
     std::string fileName = block->tableName + "_" + block->attrName + "_" + formatNotoString(block->blockNo);
     fout.open(fileName, std::ios::out | std::ios::binary);
@@ -145,7 +148,7 @@ bool BufferManager::createTable(std::string tableName) {
 }
 
 /**
- * Prepartion to drop a table. A boolean value to show the result. True is 
+ * Prepartion to drop a table. A boolean value to show the result. True is
  * success, false is failure.
  * @param   tableName   string of a table name
  * @return              result for the operation
@@ -215,7 +218,7 @@ Block* BufferManager::getFirstBlock(std::string tableName) {
  * @param   blockNoew   block pointer pointing to the curren block
  * @return              block pointer
  */
-Block* BufferManager::getNextBlock(Block *blockNow) {
+Block* BufferManager::getNextBlock(Block *blockNow, int mode) {
     Block* returnPtr = NULL;
     std::string nextBlockFileName = blockNow->tableName + "_" + formatNotoString(blockNow->blockNo + 1);
     if (recordBlockMap.find(nextBlockFileName) != recordBlockMap.end()) {
@@ -242,20 +245,24 @@ Block* BufferManager::getNextBlock(Block *blockNow) {
         } else {
             // Doesn't exist
             // Need to create the next block file
-            std::ofstream fout;
-            fout.open(nextBlockFileName, std::ios::out | std::ios::binary);
-            if (fout) {
-                Block* tmpBlock = getBlockFromRecordBlockPool();
-                for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
-                    tmpBlock->records[i].empty = true;
+            if (mode == INSERT_MODE) {
+                std::ofstream fout;
+                fout.open(nextBlockFileName, std::ios::out | std::ios::binary);
+                if (fout) {
+                    Block* tmpBlock = getBlockFromRecordBlockPool();
+                    for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
+                        tmpBlock->records[i].empty = true;
+                    }
+                    fout.write((char*)tmpBlock->records, sizeof(tmpBlock->records));
+                    tmpBlock->recordNum = 0;
+                    tmpBlock->blockNo = blockNow->blockNo + 1;
+                    tmpBlock->tableName = blockNow->tableName;
+                    recordBlockMap[nextBlockFileName] = tmpBlock;
+                    returnPtr = tmpBlock;
+                    fout.close();
+                } else {
+                    returnPtr = NULL;
                 }
-                fout.write((char*)tmpBlock->records, sizeof(tmpBlock->records));
-                tmpBlock->recordNum = 0;
-                tmpBlock->blockNo = blockNow->blockNo + 1;
-                tmpBlock->tableName = blockNow->tableName;
-                recordBlockMap[nextBlockFileName] = tmpBlock;
-                returnPtr = tmpBlock;
-                fout.close();
             }
         }
     }
@@ -265,7 +272,7 @@ Block* BufferManager::getNextBlock(Block *blockNow) {
 /**
  * To get a block which includes a record specified by a offset. Return a
  * block pointer pointing to a block which is prepared.
- * @param   offset  a offset of a record used to find a block which 
+ * @param   offset  a offset of a record used to find a block which
  *                  contains the record
  * @return          block pointer
  */
@@ -297,21 +304,21 @@ Block* BufferManager::getBlockByOffset(std::string tableName, int offset) {
         } else {
             // Error: Doesn't exist
             /*// Need to create the next block file
-            std::ofstream fout;
-            fout.open(fileName, std::ios::out | std::ios::binary);
-            if (fout) {
-                Block* tmpBlock = getBlockFromRecordBlockPool();
-                for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
-                    tmpBlock->records[i].empty = true;
-                }
-                fout.write((char*)tmpBlock->records, sizeof(tmpBlock->records));
-                tmpBlock->recordNum = 0;
-                tmpBlock->blockNo = blockNo;
-                tmpBlock->tableName = tableName;
-                recordBlockMap[fileName] = tmpBlock;
-                returnPtr = tmpBlock;
-                fout.close();
-            }*/
+             std::ofstream fout;
+             fout.open(fileName, std::ios::out | std::ios::binary);
+             if (fout) {
+             Block* tmpBlock = getBlockFromRecordBlockPool();
+             for (int i=0; i<EACH_BLOCK_RECORDS; i++) {
+             tmpBlock->records[i].empty = true;
+             }
+             fout.write((char*)tmpBlock->records, sizeof(tmpBlock->records));
+             tmpBlock->recordNum = 0;
+             tmpBlock->blockNo = blockNo;
+             tmpBlock->tableName = tableName;
+             recordBlockMap[fileName] = tmpBlock;
+             returnPtr = tmpBlock;
+             fout.close();
+             }*/
         }
     }
     
@@ -367,7 +374,7 @@ IndexBlock* BufferManager::getIndexBlock(std::string tableName, std::string attr
 }
 
 /**
- * To create a new index block (acturlly, find a not used index block sequentially 
+ * To create a new index block (acturlly, find a not used index block sequentially
  * and create it). Return a index block pointer pointing to a index block which
  * is prepared.
  * @param   tableName   string of a table name
@@ -423,4 +430,3 @@ bool BufferManager::deleteIndexBlock(std::string tableName, std::string attr, in
     remove(fileNameC);
     return true;
 }
-

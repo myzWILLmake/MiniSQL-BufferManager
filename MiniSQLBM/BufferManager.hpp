@@ -55,7 +55,7 @@ public:
     bool createTable(std::string tableName);
     bool dropTable(std::string tableName);
     Block* getFirstBlock(std::string tableName);
-    Block* getNextBlock(Block* blockNow);
+    Block* getNextBlock(Block* blockNow, int mode);
     Block* getBlockByOffset(std::string tableName, int offset);
     
     /* Functions for Index Manager */
